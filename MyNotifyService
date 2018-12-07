@@ -1,0 +1,67 @@
+package app.ram.overlay;
+
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
+
+public class MyNotifyService extends Service {
+
+    int color;
+    Intent noti_intent_stop;
+    Intent noti_intent_start;
+    Intent to_main;
+    PendingIntent pendingIntent1, pendingIntent2, pendingIntent3;
+
+    public MyNotifyService() {
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        // TODO: Return the communication channel to the service.
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        noti_intent_stop  = new Intent(this, OverlayService.class);
+        noti_intent_start  = new Intent(this, OverlayService.class);
+        to_main  = new Intent(this, MainActivity.class);
+        to_main.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        color = intent.getExtras().getInt("color");
+        noti_intent_stop.putExtra("command", "STOP");
+        noti_intent_start.putExtra("command", "START");
+        noti_intent_start.putExtra("color", color);
+        to_main.putExtra("from", "notification");
+        pendingIntent1 = PendingIntent.getService(this, 0, noti_intent_stop, 0);
+        pendingIntent2 = PendingIntent.getService(this, 1, noti_intent_start, PendingIntent.FLAG_CANCEL_CURRENT);
+        pendingIntent3 = PendingIntent.getActivity(this, 2, to_main, PendingIntent.FLAG_CANCEL_CURRENT);
+        //Get an instance of NotificationManager//
+
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(this)
+                        .setContentTitle("Overlay")
+                        .setSmallIcon(R.drawable.ic_launcher_background)
+                        .setContentText("Overlay Active").setOngoing(true)
+                        .addAction(R.mipmap.ic_launcher, "Stop", pendingIntent1)
+                        .addAction(R.mipmap.ic_launcher, "Start", pendingIntent2);
+        mBuilder.setContentIntent(pendingIntent3);
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (mNotificationManager != null) {
+            mNotificationManager.notify(1, mBuilder.build());
+        }
+        return START_REDELIVER_INTENT;
+    }
+
+    @Override
+    public void onDestroy() {
+        NotificationManager nMgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nMgr != null) {
+            nMgr.cancel(1);
+        }
+        super.onDestroy();
+    }
+}
